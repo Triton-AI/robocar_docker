@@ -126,6 +126,6 @@ fi
 #if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
 #    . /etc/bash_completion
 #fi
-cd /home/Projects
+cd /home/Projects/ros2_ws
 # Source ROS2 Install
 source /opt/ros/foxy/setup.bash
