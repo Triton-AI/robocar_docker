@@ -1,0 +1,54 @@
+FROM ghcr.io/triton-ai/robocar_docker:jetpack
+
+# Set locale
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    locales \
+    && locale-gen en_US en_US.UTF-8 \
+    && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV LANG en_US.UTF-8
+
+# Setup Source
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    software-properties-common \
+    curl \
+    && add-apt-repository universe \
+    && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install ROS2 packages
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
+    ros-foxy-desktop \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV source_ros2 /opt/ros/foxy/setup.bash
+ENV ROS_DISTRO foxy
+
+# Install sick scan xd ROS2 drivers
+RUN apt update && apt install -y \
+    git \
+    ros-${ROS_DISTRO}-diagnostic-updater \
+    ros-${ROS_DISTRO}-diagnostic-msgs
+WORKDIR /home/Projects/sensors_ws
+RUN mkdir ./src \
+    && cd ./src \
+    && git clone https://github.com/SICKAG/libsick_ldmrs.git \
+    && git clone https://github.com/SICKAG/msgpack11.git \
+    && git clone https://github.com/SICKAG/sick_scan_xd.git \
+    && cd .. \
+    && rm -rf ./build ./build_isolated/ ./devel ./devel_isolated/ ./install ./install_isolated/ ./log/ # remove any files from a previous build
+
+RUN apt install -y python3-colcon-common-extensions g++ build-essential
+
+# RUN source /opt/ros/${ROS_DISTRO}/setup.bash \
+#     && colcon build --packages-select libsick_ldmrs --event-handlers console_direct+ \
+#     && source ./install/setup.bash \
+#     && colcon build --packages-select msgpack11 --cmake-args " -DMSGPACK11_BUILD_TESTS=0" --event-handlers console_direct+ \
+#     && source ./install/setup.bash \
+#     && colcon build --packages-select sick_scan_xd --cmake-args " -DROS_VERSION=2" --event-handlers console_direct+ \
+#     && source ./install/setup.bash
+
+# Install OAKD Pro ROS2 
+# RUN cd .src/ && wget https://raw.githubusercontent.com/Serafadam/depthai_ros_driver/galactic/get_full_workspace.sh -O - | bash -s ${ROS_DISTRO}
